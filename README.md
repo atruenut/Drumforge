@@ -6,8 +6,7 @@ A fully synthesised, highly configurable **VST3 drum instrument** for Windows (w
 
 ## Download
 
-**[Latest release](../../releases/latest)** → `DrumForge-win64.zip` (Windows 64-bit VST3).
-The same zip is also kept in this repo at [`prebuilt/DrumForge-win64.zip`](prebuilt/DrumForge-win64.zip).
+**[prebuilt/DrumForge-win64.zip](prebuilt/DrumForge-win64.zip)** (Windows 64-bit VST3). Click it, then the download button.
 
 ### Install (Windows)
 
