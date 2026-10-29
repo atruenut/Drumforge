@@ -1,0 +1,23 @@
+name: build
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch VST3 SDK
+        run: git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/steinbergmedia/vst3sdk.git third_party/vst3sdk
+      - name: Configure
+        run: cmake -S . -B out -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build out --config Release --target DrumForge
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DrumForge-${{ matrix.os }}
+          path: |
+            out/bundle
+            out/raw
+            out/Release

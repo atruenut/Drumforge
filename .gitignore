@@ -1,0 +1,6 @@
+third_party/vst3sdk/
+build/raw/
+build/bundle/
+build/win/
+build-*/
+*.ppm
