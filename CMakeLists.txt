@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(DrumForge VERSION 1.0.0 LANGUAGES CXX)
+project(DrumForge VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -49,6 +49,17 @@ if(WIN32)
   add_custom_command(TARGET DrumForge POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bundle/DrumForge.vst3/Contents/x86_64-win
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DrumForge> ${CMAKE_BINARY_DIR}/bundle/DrumForge.vst3/Contents/x86_64-win/DrumForge.vst3)
+elseif(APPLE)
+  # macOS VST3 bundle: DrumForge.vst3/Contents/{Info.plist,MacOS/DrumForge}
+  target_link_libraries(DrumForge PRIVATE "-framework CoreFoundation")
+  set_target_properties(DrumForge PROPERTIES
+    BUNDLE TRUE BUNDLE_EXTENSION vst3
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/Info.plist.in
+    MACOSX_BUNDLE_BUNDLE_NAME DrumForge
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.drumforge.vst3
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bundle)
 elseif(NOT APPLE)
   target_link_libraries(DrumForge PRIVATE dl pthread)
   add_custom_command(TARGET DrumForge POST_BUILD
