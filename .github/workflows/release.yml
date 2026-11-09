@@ -1,0 +1,82 @@
+name: release
+# Run from the Actions tab ("Run workflow") or push a tag like v1.1.0.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.1.0)"
+        required: true
+        default: "v1.1.0"
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, name: win64 }
+          - { os: ubuntu-latest, name: linux-x64 }
+          - { os: macos-latest, name: macos-universal }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch VST3 SDK
+        run: git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/steinbergmedia/vst3sdk.git third_party/vst3sdk
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cmake -S . -B out -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            cmake -S . -B out -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          else
+            cmake -S . -B out -DCMAKE_BUILD_TYPE=Release
+          fi
+      - name: Build
+        run: cmake --build out --config Release --target DrumForge
+      - name: Package
+        shell: bash
+        run: |
+          set -e
+          P=DrumForge-${{ matrix.name }}
+          mkdir -p "$P"
+          case "${{ runner.os }}" in
+            Windows)
+              mkdir -p "$P/DrumForge.vst3/Contents/x86_64-win"
+              F=$(find out -name DrumForge.vst3 -type f | head -1)
+              cp "$F" "$P/DrumForge.vst3/Contents/x86_64-win/DrumForge.vst3"
+              echo 'Copy the folder DrumForge.vst3 to C:\Program Files\Common Files\VST3\ (admin), then rescan plugins in your DAW.' > "$P/INSTALL.txt" ;;
+            Linux)
+              cp -r out/bundle/DrumForge.vst3 "$P/"
+              echo 'Copy the folder DrumForge.vst3 to ~/.vst3/ then rescan plugins. Linux builds use the host generic parameter UI.' > "$P/INSTALL.txt" ;;
+            macOS)
+              cp -R out/bundle/DrumForge.vst3 "$P/"
+              codesign --force --deep -s - "$P/DrumForge.vst3" || true
+              echo 'Copy DrumForge.vst3 to ~/Library/Audio/Plug-Ins/VST3/ then rescan plugins. The build is not notarised: if macOS blocks it, run: xattr -cr ~/Library/Audio/Plug-Ins/VST3/DrumForge.vst3. macOS builds use the host generic parameter UI.' > "$P/INSTALL.txt" ;;
+          esac
+          cp docs/USER_GUIDE.md README.md LICENSE "$P/"
+          find "$P" -type f
+          if [ "${{ runner.os }}" = "Windows" ]; then 7z a "$P.zip" "$P" >/dev/null; else zip -qr "$P.zip" "$P"; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DrumForge-${{ matrix.name }}
+          path: DrumForge-${{ matrix.name }}.zip
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          ls -l dist
+          gh release create "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "DrumForge $TAG" \
+            --notes "Pre-built VST3 for Windows x64, Linux x64 and macOS (universal, arm64 + Intel). Unzip and follow INSTALL.txt. Manual: docs/USER_GUIDE.md. Not yet tested in a real DAW by the author; please report issues. macOS build is unsigned/not notarised."

@@ -6,7 +6,7 @@ A fully synthesised, highly configurable **VST3 drum instrument** for Windows (w
 
 ## Download
 
-**[prebuilt/DrumForge-win64.zip](prebuilt/DrumForge-win64.zip)** (Windows 64-bit VST3). Click it, then the download button.
+**[Releases page](../../releases)** has zips for Windows x64, Linux x64 and macOS (universal). A Windows build is also kept in the repo at [`prebuilt/DrumForge-win64.zip`](prebuilt/DrumForge-win64.zip).
 
 ### Install (Windows)
 
@@ -18,6 +18,12 @@ A fully synthesised, highly configurable **VST3 drum instrument** for Windows (w
 The `.vst3` file inside is the DLL. If Windows complains about a missing runtime, install the Microsoft UCRT / Visual C++ redistributable.
 
 > **Honest status:** the Windows DLL was cross-compiled and verified with Steinberg's VST3 validator (on the Linux build of the same code), plus automated engine, GUI-logic, groove-loop and fuzz tests. It has **not** yet been run inside a real Windows DAW by its author. If something misbehaves, please open an issue with your DAW, its version, the preset and the steps.
+
+### Install (Linux / macOS)
+
+* **Linux:** copy `DrumForge.vst3` to `~/.vst3/` and rescan.
+* **macOS:** copy `DrumForge.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and rescan. The build is unsigned; if macOS blocks it run `xattr -cr ~/Library/Audio/Plug-Ins/VST3/DrumForge.vst3`.
+* Linux and macOS use the host's generic parameter UI (the custom editor is Windows-only for now). They compile and pass CI but have not been run in a real DAW.
 
 ## What it does
 
